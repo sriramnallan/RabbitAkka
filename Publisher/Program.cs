@@ -67,7 +67,7 @@ namespace Publisher
             channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
             var props = channel.CreateBasicProperties();
             props.ContentType = "text/plain";
-            props.DeliveryMode = 2;
+            props.DeliveryMode = 1;
             int i;
             for (i = 1; i < 101; i++)
             {
