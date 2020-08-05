@@ -8,20 +8,15 @@ using Topshelf;
 using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Configuration;
-using log4net;
+using Serilog;
 using System.Reflection;
 
 namespace Consumer
 {
     public class Program
     {
-        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
         public static void Main()
         {
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
-            _log.Info("Main started");
-
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
                 HostFactory.Run(x =>
@@ -50,15 +45,18 @@ namespace Consumer
     public class Consumer
     {
         private Timer _timer;
-        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
-
+      
         public Consumer()
         {
+            Log.Logger = new LoggerConfiguration()
+               .WriteTo.Console()
+               .WriteTo.File("C:\\LogFiles\\Consumer\\log.txt")
+               .CreateLogger();
         }
 
         public void StartApp()
         {
-            _log.Info("Startpp started");
+            Log.Information("Consumer service started");
             _timer = new Timer();
             _timer.Elapsed += ConsumeMessages_Consumer;
             _timer.Interval = 5000;

@@ -5,20 +5,14 @@ using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Threading;
 using System.Configuration;
-using log4net;
-using System.Reflection;
+using Serilog;
 
 namespace Publisher
 {
     public class Program
     {
-        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
         public static void Main()
-        {
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
-            _log.Info("Main started");
-
+        {  
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
                 HostFactory.Run(x =>
@@ -48,10 +42,15 @@ namespace Publisher
         private Timer _timer;
         public Publisher()
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File("C:\\LogFiles\\Publisher\\log.txt")
+                .CreateLogger();
         }
 
         public void StartApp()
         {
+            Log.Information("Publisher service started");
             _timer = new Timer();
             _timer.Elapsed += QueueMessages_Producer;
             _timer.Interval = 2000;
