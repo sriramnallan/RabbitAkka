@@ -12,12 +12,12 @@ namespace Publisher
 {
     public class Program
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
+        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
         public static void Main()
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
-            log.Info("Main started");
+            _log.Info("Main started");
 
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
@@ -25,7 +25,7 @@ namespace Publisher
                 {
                    x.Service<Publisher>(s =>
                     {
-                        s.ConstructUsing(name => new Publisher(log));
+                        s.ConstructUsing(name => new Publisher());
                         s.WhenStarted(tc => tc.StartApp());
                         s.WhenStopped(tc => tc.StopApp());
                     });
@@ -38,7 +38,7 @@ namespace Publisher
             }
             else
             {
-                new Publisher(log).StartApp();
+                new Publisher().StartApp();
                 Console.ReadLine();
             }
         }
@@ -46,15 +46,12 @@ namespace Publisher
     public class Publisher
     {
         private Timer _timer;
-        private ILog _log;
-        public Publisher(ILog log)
+        public Publisher()
         {
-            _log = log;
         }
 
         public void StartApp()
         {
-            _log.Info("Startpp started");
             _timer = new Timer();
             _timer.Elapsed += QueueMessages_Producer;
             _timer.Interval = 2000;

@@ -15,12 +15,12 @@ namespace Consumer
 {
     public class Program
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
+        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
         public static void Main()
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
-            log.Info("Main started");
+            _log.Info("Main started");
 
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
@@ -28,7 +28,7 @@ namespace Consumer
                 {
                     x.Service<Consumer>(s =>
                     {
-                        s.ConstructUsing(name => new Consumer(log));
+                        s.ConstructUsing(name => new Consumer());
                         s.WhenStarted(tc => tc.StartApp());
                         s.WhenStopped(tc => tc.StopApp());
                     });
@@ -41,7 +41,7 @@ namespace Consumer
             }
             else
             {
-                new Consumer(log).StartApp();
+                new Consumer().StartApp();
                 Console.ReadLine();
             }
         }
@@ -50,11 +50,10 @@ namespace Consumer
     public class Consumer
     {
         private Timer _timer;
-        private ILog _log;
+        private static readonly ILog _log = LogManager.GetLogger(typeof(Program));
 
-        public Consumer(ILog log)
+        public Consumer()
         {
-            _log = log;
         }
 
         public void StartApp()
