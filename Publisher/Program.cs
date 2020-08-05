@@ -42,10 +42,11 @@ namespace Publisher
         private Timer _timer;
         public Publisher()
         {
+            var logFile = ConfigurationManager.AppSettings.Get("LogFile");
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .WriteTo.File("C:\\LogFiles\\Publisher\\log.txt")
-                .CreateLogger();
+               .WriteTo.Console()
+               .WriteTo.RollingFile(logFile, retainedFileCountLimit: 7)
+               .CreateLogger();
         }
 
         public void StartApp()

@@ -48,9 +48,10 @@ namespace Consumer
       
         public Consumer()
         {
+            var logFile = ConfigurationManager.AppSettings.Get("LogFile");
             Log.Logger = new LoggerConfiguration()
                .WriteTo.Console()
-               .WriteTo.File("C:\\LogFiles\\Consumer\\log.txt")
+               .WriteTo.RollingFile(logFile, retainedFileCountLimit: 7)
                .CreateLogger();
         }
 
