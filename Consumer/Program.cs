@@ -9,7 +9,6 @@ using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Configuration;
 using Serilog;
-using System.Reflection;
 
 namespace Consumer
 {
