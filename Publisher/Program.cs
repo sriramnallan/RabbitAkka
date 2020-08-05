@@ -5,20 +5,27 @@ using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Threading;
 using System.Configuration;
+using log4net;
+using System.Reflection;
 
 namespace Publisher
 {
     public class Program
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
         public static void Main()
         {
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
+            log.Info("Main started");
+
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
                 HostFactory.Run(x =>
                 {
                    x.Service<Publisher>(s =>
                     {
-                        s.ConstructUsing(name => new Publisher());
+                        s.ConstructUsing(name => new Publisher(log));
                         s.WhenStarted(tc => tc.StartApp());
                         s.WhenStopped(tc => tc.StopApp());
                     });
@@ -31,7 +38,7 @@ namespace Publisher
             }
             else
             {
-                new Publisher().StartApp();
+                new Publisher(log).StartApp();
                 Console.ReadLine();
             }
         }
@@ -39,12 +46,15 @@ namespace Publisher
     public class Publisher
     {
         private Timer _timer;
-        public Publisher()
+        private ILog _log;
+        public Publisher(ILog log)
         {
+            _log = log;
         }
 
         public void StartApp()
         {
+            _log.Info("Startpp started");
             _timer = new Timer();
             _timer.Elapsed += QueueMessages_Producer;
             _timer.Interval = 2000;

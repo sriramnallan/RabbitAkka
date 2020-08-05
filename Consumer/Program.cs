@@ -8,20 +8,27 @@ using Topshelf;
 using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Configuration;
+using log4net;
+using System.Reflection;
 
 namespace Consumer
 {
     public class Program
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
         public static void Main()
         {
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            log4net.Config.XmlConfigurator.Configure(logRepository, new System.IO.FileInfo("log4net.config"));
+            log.Info("Main started");
+
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
                 HostFactory.Run(x =>
                 {
                     x.Service<Consumer>(s =>
                     {
-                        s.ConstructUsing(name => new Consumer());
+                        s.ConstructUsing(name => new Consumer(log));
                         s.WhenStarted(tc => tc.StartApp());
                         s.WhenStopped(tc => tc.StopApp());
                     });
@@ -34,7 +41,7 @@ namespace Consumer
             }
             else
             {
-                new Consumer().StartApp();
+                new Consumer(log).StartApp();
                 Console.ReadLine();
             }
         }
@@ -43,13 +50,16 @@ namespace Consumer
     public class Consumer
     {
         private Timer _timer;
+        private ILog _log;
 
-        public Consumer()
+        public Consumer(ILog log)
         {
+            _log = log;
         }
 
         public void StartApp()
         {
+            _log.Info("Startpp started");
             _timer = new Timer();
             _timer.Elapsed += ConsumeMessages_Consumer;
             _timer.Interval = 5000;
