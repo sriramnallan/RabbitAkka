@@ -71,20 +71,18 @@ namespace Consumer
             IActorRef medActor = MedData.ActorOf(BaseActor);
 
             var factory = new ConnectionFactory() { HostName = "localhost" };
-            using (var connection = factory.CreateConnection())
-            using (var channel = connection.CreateModel())
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+            channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) =>
             {
-                channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
-                var consumer = new EventingBasicConsumer(channel);
-                consumer.Received += (model, ea) =>
-                {
-                    var body = ea.Body.ToArray();
-                    medActor.Tell(body);
-                };
-                channel.BasicConsume(queue: "RabbitAkka", autoAck: true, consumer: consumer);
-                Thread.Sleep(Timeout.Infinite);
-            }
-            
+                var body = ea.Body.ToArray();
+                medActor.Tell(body);
+            };
+            channel.BasicConsume(queue: "RabbitAkka", autoAck: true, consumer: consumer);
+            Thread.Sleep(Timeout.Infinite);
         }
 
         public void StopApp()

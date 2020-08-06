@@ -61,19 +61,23 @@ namespace Publisher
         private void QueueMessages_Producer(object source, ElapsedEventArgs e)
         {
             _timer.Stop();
+
             var factory = new ConnectionFactory() { HostName = "localhost" };
             var connection = factory.CreateConnection();
             var channel = connection.CreateModel();
             channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
+
             var props = channel.CreateBasicProperties();
             props.ContentType = "text/plain";
             props.DeliveryMode = 1;
+
             int i;
             for (i = 1; i < 101; i++)
             {
                 string message = "Message number " + i + " is " + Guid.NewGuid().ToString() + Guid.NewGuid().ToString() + Guid.NewGuid().ToString();
                 channel.BasicPublish(exchange: "", routingKey: "RabbitAkka", basicProperties: props, body: System.Text.Encoding.ASCII.GetBytes(message));
             }
+
             Console.WriteLine(i);
             Thread.Sleep(10000);
             _timer.Start();
