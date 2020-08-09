@@ -9,6 +9,7 @@ using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Configuration;
 using Serilog;
+using Common;
 
 namespace Consumer
 {
@@ -79,7 +80,7 @@ namespace Consumer
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                var body = System.Text.Encoding.ASCII.GetString(ea.Body.ToArray());
+                var body = Message.DeserializeFromBinary(ea.Body.ToArray());
                 cosumerActor.Tell(body);
             };
             channel.BasicConsume(queue: "RabbitAkka", autoAck: true, consumer: consumer);
@@ -97,11 +98,11 @@ namespace Consumer
     {
         public ConsumerActor()
         {
-            Receive<string>(message => ProcessStringMessage(message));
+            Receive<Message>(message => ProcessStringMessage(message));
         }
-        private void ProcessStringMessage(string message)
+        private void ProcessStringMessage(Message message)
         {
-            Console.WriteLine(message);
+            Console.WriteLine(message.MessageContent);
             Log.Information(Thread.CurrentThread.ManagedThreadId.ToString());
         }
     }

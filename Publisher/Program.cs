@@ -6,6 +6,7 @@ using System.Timers;
 using System.Threading;
 using System.Configuration;
 using Serilog;
+using Common;
 
 namespace Publisher
 {
@@ -74,8 +75,9 @@ namespace Publisher
             int i;
             for (i = 1; i < 101; i++)
             {
-                string message = "Message number " + i + " is " + Guid.NewGuid().ToString() + Guid.NewGuid().ToString() + Guid.NewGuid().ToString();
-                channel.BasicPublish(exchange: "", routingKey: "RabbitAkka", basicProperties: props, body: System.Text.Encoding.ASCII.GetBytes(message));
+                var messageContent = "Message number " + i + " is " + Guid.NewGuid().ToString() + Guid.NewGuid().ToString() + Guid.NewGuid().ToString();
+                var message = new Message(i, messageContent, DateTime.Now);
+                channel.BasicPublish(exchange: "", routingKey: "RabbitAkka", basicProperties: props, body: Message.SerializeIntoBinary(message));
             }
 
             Console.WriteLine(i);
