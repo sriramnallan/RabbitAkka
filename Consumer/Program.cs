@@ -44,7 +44,8 @@ namespace Consumer
     public class Consumer
     {
         private Timer _timer;
-      
+        private ActorSystem _conumerActorSystem;
+
         public Consumer()
         {
             var logFile = ConfigurationManager.AppSettings.Get("LogFile");
@@ -66,9 +67,9 @@ namespace Consumer
         private void ConsumeMessages_Consumer(object source, ElapsedEventArgs e)
         {
             _timer.Stop();
-            ActorSystem MedData = ActorSystem.Create("RabbitAkka");
-            Props BaseActor = Props.Create<ConsumerBaseActor>().WithRouter(new RoundRobinPool(200));
-            IActorRef medActor = MedData.ActorOf(BaseActor);
+            _conumerActorSystem = ActorSystem.Create("RabbitAkka");
+            Props BaseActor = Props.Create<ConsumerActor>().WithRouter(new RoundRobinPool(200));
+            IActorRef cosumerActor = _conumerActorSystem.ActorOf(BaseActor);
 
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using var connection = factory.CreateConnection();
@@ -78,8 +79,8 @@ namespace Consumer
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                var body = ea.Body.ToArray();
-                medActor.Tell(body);
+                var body = System.Text.Encoding.ASCII.GetString(ea.Body.ToArray());
+                cosumerActor.Tell(body);
             };
             channel.BasicConsume(queue: "RabbitAkka", autoAck: true, consumer: consumer);
             Thread.Sleep(Timeout.Infinite);
@@ -87,16 +88,21 @@ namespace Consumer
 
         public void StopApp()
         {
+            _conumerActorSystem.Terminate();
+
         }
     }
 
-    public class ConsumerBaseActor : UntypedActor
+    public class ConsumerActor : ReceiveActor
     {
-        protected override void OnReceive(object message)
+        public ConsumerActor()
         {
-            string str = System.Text.Encoding.ASCII.GetString((byte[])message);
-            Console.WriteLine(str);
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
+            Receive<string>(message => ProcessStringMessage(message));
+        }
+        private void ProcessStringMessage(string message)
+        {
+            Console.WriteLine(message);
+            Log.Information(Thread.CurrentThread.ManagedThreadId.ToString());
         }
     }
 }
