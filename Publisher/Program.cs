@@ -41,6 +41,8 @@ namespace Publisher
     public class Publisher
     {
         private Timer _timer;
+        private IModel _channel;
+
         public Publisher()
         {
             var logFile = ConfigurationManager.AppSettings.Get("LogFile");
@@ -53,6 +55,14 @@ namespace Publisher
         public void StartApp()
         {
             Log.Information("Publisher service started");
+
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            var connection = factory.CreateConnection();
+            _channel = connection.CreateModel();
+            _channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
+            
+
+            Log.Information("Queue Declared");
             _timer = new Timer();
             _timer.Elapsed += QueueMessages_Producer;
             _timer.Interval = 2000;
@@ -63,25 +73,18 @@ namespace Publisher
         {
             _timer.Stop();
 
-            var factory = new ConnectionFactory() { HostName = "localhost" };
-            var connection = factory.CreateConnection();
-            var channel = connection.CreateModel();
-            channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
-
-            var props = channel.CreateBasicProperties();
-            props.ContentType = "text/plain";
+            var props = _channel.CreateBasicProperties();
             props.DeliveryMode = 1;
 
-            int i;
-            for (i = 1; i < 101; i++)
+            for (int i = 1; i < 101; i++)
             {
                 var messageContent = "Message number " + i + " is " + Guid.NewGuid().ToString() + Guid.NewGuid().ToString() + Guid.NewGuid().ToString();
                 var message = new Message(i, messageContent, DateTime.Now);
-                channel.BasicPublish(exchange: "", routingKey: "RabbitAkka", basicProperties: props, body: Message.SerializeIntoBinary(message));
+                _channel.BasicPublish(exchange: "", routingKey: "RabbitAkka", basicProperties: props, body: Message.SerializeIntoBinary(message));
+                Log.Information("Message {0} is published", i);
             }
-
-            Console.WriteLine(i);
             Thread.Sleep(10000);
+
             _timer.Start();
         }
 

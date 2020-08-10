@@ -68,14 +68,16 @@ namespace Consumer
         private void ConsumeMessages_Consumer(object source, ElapsedEventArgs e)
         {
             _timer.Stop();
-            _conumerActorSystem = ActorSystem.Create("RabbitAkka");
-            Props BaseActor = Props.Create<ConsumerActor>().WithRouter(new RoundRobinPool(200));
-            IActorRef cosumerActor = _conumerActorSystem.ActorOf(BaseActor);
 
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using var connection = factory.CreateConnection();
             using var channel = connection.CreateModel();
             channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
+            channel.QueueDeclare(queue: "UnprocessedRabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
+
+            _conumerActorSystem = ActorSystem.Create("RabbitAkka");
+            Props BaseActor = Props.Create<ConsumerActor>(channel).WithRouter(new RoundRobinPool(200));
+            IActorRef cosumerActor = _conumerActorSystem.ActorOf(BaseActor);            
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
@@ -96,12 +98,20 @@ namespace Consumer
 
     public class ConsumerActor : ReceiveActor
     {
-        public ConsumerActor()
+        readonly IModel _channel;
+        public ConsumerActor(IModel channel)
         {
+            _channel = channel;
             Receive<Message>(message => ProcessStringMessage(message));
         }
         private void ProcessStringMessage(Message message)
         {
+            if (message.MessageId == 50)
+            {
+                var props = _channel.CreateBasicProperties();
+                props.DeliveryMode = 1;
+                _channel.BasicPublish(exchange: "", routingKey: "UnprocessedRabbitAkka", basicProperties: props, body: Message.SerializeIntoBinary(message));
+            }
             Console.WriteLine(message.MessageContent);
             Log.Information(Thread.CurrentThread.ManagedThreadId.ToString());
         }
