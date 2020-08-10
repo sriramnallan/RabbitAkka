@@ -13,17 +13,17 @@ namespace Publisher
     public class Program
     {
         public static void Main()
-        {  
+        {
             if (ConfigurationManager.AppSettings.Get("RunAsService") == "1")
             {
                 HostFactory.Run(x =>
                 {
-                   x.Service<Publisher>(s =>
-                    {
-                        s.ConstructUsing(name => new Publisher());
-                        s.WhenStarted(tc => tc.StartApp());
-                        s.WhenStopped(tc => tc.StopApp());
-                    });
+                    x.Service<Publisher>(s =>
+                     {
+                         s.ConstructUsing(name => new Publisher());
+                         s.WhenStarted(tc => tc.StartApp());
+                         s.WhenStopped(tc => tc.StopApp());
+                     });
                     x.RunAsLocalSystem();
                     x.SetDescription("Publisher Host");
                     x.SetDisplayName("Publisher Host");
@@ -60,7 +60,6 @@ namespace Publisher
             var connection = factory.CreateConnection();
             _channel = connection.CreateModel();
             _channel.QueueDeclare(queue: "RabbitAkka", durable: false, exclusive: false, autoDelete: false, arguments: null);
-            
 
             Log.Information("Queue Declared");
             _timer = new Timer();

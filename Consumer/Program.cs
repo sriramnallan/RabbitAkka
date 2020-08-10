@@ -92,7 +92,6 @@ namespace Consumer
         public void StopApp()
         {
             _conumerActorSystem.Terminate();
-
         }
     }   
 }
